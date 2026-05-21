@@ -76,6 +76,38 @@ class TeModel {
     }
   }
 
+  Future<void> sumOneTe(String id) async {
+    List<TeModel> tes = await loadTes();
+    int index = tes.indexWhere((te) => te.id == id);
+    if (index != -1) {
+      TeModel te = tes[index];
+      tes[index] = TeModel(
+        id: te.id,
+        sabor: te.sabor,
+        cantidad: te.cantidad + 1,
+      );
+      await saveTes(tes);
+    }
+  }
+
+  Future<void> restOneTe(String id) async {
+    List<TeModel> tes = await loadTes();
+    int index = tes.indexWhere((te) => te.id == id);
+    if (index != -1) {
+      TeModel te = tes[index];
+      if (te.cantidad > 0) {
+        tes[index] = TeModel(
+          id: te.id,
+          sabor: te.sabor,
+          cantidad: te.cantidad - 1,
+        );
+        await saveTes(tes);
+      } else {
+        throw Exception('Ya no hay más bolsas de té para restar.');
+      }
+    }
+  }
+
   Future<void> importTes() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(

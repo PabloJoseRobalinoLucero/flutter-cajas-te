@@ -101,6 +101,14 @@ class _MyHomePageState extends State<MyHomePage> {
                           );
                           _refreshTes();
                         },
+                        onSumOne: () async {
+                          await teModel.sumOneTe(te.id);
+                          _refreshTes();
+                        },
+                        onRestOne: () async {
+                          await teModel.restOneTe(te.id);
+                          _refreshTes();
+                        },
                       );
                     },
                   );

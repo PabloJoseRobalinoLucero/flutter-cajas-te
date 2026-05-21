@@ -6,6 +6,8 @@ class TeCard extends StatelessWidget {
   final int cantidad;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
+  final VoidCallback onSumOne;
+  final VoidCallback onRestOne;
 
   const TeCard({
     super.key,
@@ -14,6 +16,8 @@ class TeCard extends StatelessWidget {
     required this.cantidad,
     required this.onDelete,
     required this.onEdit,
+    required this.onSumOne,
+    required this.onRestOne,
   });
 
   @override
@@ -34,6 +38,14 @@ class TeCard extends StatelessWidget {
               ),
             ),
             Text('Cantidad: $cantidad'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(onPressed: onEdit, icon: Icon(Icons.edit)),
+                IconButton(onPressed: onSumOne, icon: Icon(Icons.add)),
+                IconButton(onPressed: onRestOne, icon: Icon(Icons.remove)),
+              ],
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
