@@ -116,9 +116,7 @@ class TeModel {
 
   Future<void> importTes() async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.any,
-      );
+      FilePickerResult? result = await FilePicker.pickFiles(type: FileType.any);
       if (result == null) {
         throw Exception('No se seleccionó ningún archivo.');
       } else {
