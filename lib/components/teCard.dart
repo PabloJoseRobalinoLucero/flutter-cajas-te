@@ -25,7 +25,7 @@ class TeCard extends StatelessWidget {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
       margin: EdgeInsets.all(10.0),
-      color: cantidad > 5 ? Color(0xFF1B5E20) : Color(0xffd32f2f),
+      color: cantidad > 6 ? Color(0xFF1B5E20) : Color(0xffd32f2f),
       child: Padding(
         padding: EdgeInsets.all(5.0),
         child: Column(

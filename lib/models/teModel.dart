@@ -35,11 +35,17 @@ class TeModel {
     await prefs.setString('tes', jsonStr);
   }
 
+  List<TeModel> orderListByCantidad(List<TeModel> tes) {
+    tes.sort((a, b) => b.cantidad.compareTo(a.cantidad));
+    return tes.reversed.toList();
+  }
+
   Future<List<TeModel>> loadTes() async {
     final prefs = await SharedPreferences.getInstance();
     String? jsonStr = prefs.getString('tes');
     if (jsonStr != null) {
-      return parseTes(jsonStr);
+      List<TeModel> tes = parseTes(jsonStr);
+      return orderListByCantidad(tes);
     } else {
       return [];
     }
