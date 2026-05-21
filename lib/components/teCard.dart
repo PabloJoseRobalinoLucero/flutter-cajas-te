@@ -41,9 +41,8 @@ class TeCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                IconButton(onPressed: onEdit, icon: Icon(Icons.edit)),
-                IconButton(onPressed: onSumOne, icon: Icon(Icons.add)),
                 IconButton(onPressed: onRestOne, icon: Icon(Icons.remove)),
+                IconButton(onPressed: onSumOne, icon: Icon(Icons.add)),
               ],
             ),
             Row(
