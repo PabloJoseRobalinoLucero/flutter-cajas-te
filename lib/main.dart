@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Cajas de Té App',
-      theme: ThemeData.dark(), // Utiliza el tema oscuro por defecto
+      theme: ThemeData.dark(),
       home: MyHomePage(),
     );
   }
@@ -45,15 +45,31 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   late TeModel teModel;
+  List<TeModel> _listaTes = [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
     teModel = TeModel(id: "", sabor: '', cantidad: 0);
+    _cargarDatosIniciales();
   }
 
-  Future<void> _refreshTes() async {
-    setState(() {});
+  // Carga los datos desde SharedPreferences solo al iniciar la app
+  Future<void> _cargarDatosIniciales() async {
+    try {
+      final datos = await teModel.loadTes();
+      setState(() {
+        _listaTes = datos;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -62,60 +78,7 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(title: Text('Cantidad de bolsas de té')),
       body: Column(
         children: [
-          Expanded(
-            child: FutureBuilder(
-              future: teModel.loadTes(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(child: Text('No hay datos disponibles'));
-                } else {
-                  List<TeModel> tes = snapshot.data!;
-                  return ListView.builder(
-                    itemCount: tes.length,
-                    itemBuilder: (context, index) {
-                      final te = tes[index];
-                      return TeCard(
-                        id: te.id,
-                        sabor: te.sabor,
-                        cantidad: te.cantidad,
-                        onDelete: () async {
-                          await teModel.deleteTe(te.id);
-                          await _refreshTes();
-
-                          if (!mounted) return;
-
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Té eliminado')),
-                          );
-                        },
-                        onEdit: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => EditarTe(te: te),
-                            ),
-                          );
-                          _refreshTes();
-                        },
-                        onSumOne: () async {
-                          await teModel.sumOneTe(te.id);
-                          _refreshTes();
-                        },
-                        onRestOne: () async {
-                          await teModel.restOneTe(te.id);
-                          _refreshTes();
-                        },
-                      );
-                    },
-                  );
-                }
-              },
-            ),
-          ),
+          Expanded(child: _buildBody()),
           Container(
             padding: EdgeInsets.all(8.0),
             child: Column(
@@ -125,13 +88,14 @@ class _MyHomePageState extends State<MyHomePage> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      teModel.importTes().then((_) => _refreshTes()).catchError(
-                        (e) {
-                          ScaffoldMessenger.of(
-                            context,
-                          ).showSnackBar(SnackBar(content: Text('$e')));
-                        },
-                      );
+                      teModel
+                          .importTes()
+                          .then((_) => _cargarDatosIniciales())
+                          .catchError((e) {
+                            ScaffoldMessenger.of(
+                              context,
+                            ).showSnackBar(SnackBar(content: Text('$e')));
+                          });
                     },
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -154,11 +118,10 @@ class _MyHomePageState extends State<MyHomePage> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  'Datos descargados correctamente en la carpeta de descargas',
+                                  'Datos descargados correctamente',
                                 ),
                               ),
                             );
-                            _refreshTes();
                           })
                           .catchError((e) {
                             ScaffoldMessenger.of(
@@ -181,7 +144,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      teModel.eliminarTodosTes().then((_) => _refreshTes());
+                      teModel.eliminarTodosTes().then((_) {
+                        setState(() {
+                          _listaTes.clear();
+                        });
+                      });
                     },
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -208,12 +175,81 @@ class _MyHomePageState extends State<MyHomePage> {
                 context,
                 MaterialPageRoute(builder: (context) => AgregarTe()),
               );
-              _refreshTes();
+              _cargarDatosIniciales(); // Recarga si se añade uno nuevo
             },
             child: Icon(Icons.add),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return Center(child: CircularProgressIndicator());
+    }
+    if (_errorMessage != null) {
+      return Center(child: Text('Error: $_errorMessage'));
+    }
+    if (_listaTes.isEmpty) {
+      return Center(child: Text('No hay datos disponibles'));
+    }
+
+    return ListView.builder(
+      itemCount: _listaTes.length,
+      itemBuilder: (context, index) {
+        final te = _listaTes[index];
+        return TeCard(
+          id: te.id,
+          sabor: te.sabor,
+          cantidad: te.cantidad,
+          onDelete: () async {
+            await teModel.deleteTe(te.id);
+            setState(() {
+              _listaTes.removeAt(index);
+            });
+            if (!mounted) return;
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Té eliminado')));
+          },
+          onEdit: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => EditarTe(te: te)),
+            );
+            _cargarDatosIniciales();
+          },
+          onSumOne: () async {
+            await teModel.sumOneTe(te.id);
+            setState(() {
+              _listaTes[index] = TeModel(
+                id: te.id,
+                sabor: te.sabor,
+                cantidad: te.cantidad + 1,
+              );
+            });
+          },
+          onRestOne: () async {
+            if (te.cantidad > 0) {
+              await teModel.restOneTe(te.id);
+              setState(() {
+                _listaTes[index] = TeModel(
+                  id: te.id,
+                  sabor: te.sabor,
+                  cantidad: te.cantidad - 1,
+                );
+              });
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Ya no hay más bolsas de té para restar.'),
+                ),
+              );
+            }
+          },
+        );
+      },
     );
   }
 }
